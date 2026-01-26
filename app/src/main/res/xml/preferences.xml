@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <PreferenceCategory
+        android:title="Server Configuration"
+        app:iconSpaceReserved="false">
+
+        <EditTextPreference
+            android:key="port"
+            android:title="FTP Port"
+            android:summary="Default: 2121"
+            android:defaultValue="2121"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="webdav_port"
+            android:title="WebDAV Port"
+            android:summary="Default: 8080"
+            android:defaultValue="8080"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="root_directory"
+            android:title="@string/root_directory"
+            android:summary="@string/root_directory_summary"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <PreferenceCategory
+        android:title="Authentication"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:key="anonymous_access"
+            android:title="@string/anonymous_access"
+            android:summary="@string/anonymous_summary"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="username"
+            android:title="@string/username"
+            android:defaultValue="user"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="password"
+            android:title="@string/password"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

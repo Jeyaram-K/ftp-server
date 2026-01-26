@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">FTP Server</string>
+    
+    <!-- Main Activity -->
+    <string name="server_status">Server Status</string>
+    <string name="status_stopped">Stopped</string>
+    <string name="status_running">Running</string>
+    <string name="status_starting">Starting…</string>
+    <string name="start_server">Start Server</string>
+    <string name="stop_server">Stop Server</string>
+    <string name="ftp_url">FTP URL</string>
+    <string name="tap_to_copy">Tap to copy</string>
+    <string name="url_copied">FTP URL copied to clipboard</string>
+    <string name="scan_qr_code">Scan QR code to connect</string>
+    <string name="storage_path">Storage Path</string>
+    <string name="select_folder">Select Folder</string>
+    <string name="connection_log">Connection Log</string>
+    <string name="no_connections">No connections yet</string>
+    <string name="wifi_not_connected">WiFi not connected</string>
+    <string name="connect_to_wifi">Please connect to a WiFi network to use the FTP server</string>
+    
+    <!-- Settings -->
+    <string name="settings">Settings</string>
+    <string name="port_number">Port Number</string>
+    <string name="port_summary">Default: 2121</string>
+    <string name="anonymous_access">Anonymous Access</string>
+    <string name="anonymous_summary">Allow connections without password</string>
+    <string name="username">Username</string>
+    <string name="password">Password</string>
+    <string name="auto_start">Auto Start</string>
+    <string name="auto_start_summary">Start server when app opens</string>
+    <string name="root_directory">Root Directory</string>
+    <string name="root_directory_summary">Directory to share via FTP</string>
+    
+    <!-- Notifications -->
+    <string name="notification_channel_name">FTP Server</string>
+    <string name="notification_channel_desc">FTP Server status notifications</string>
+    <string name="notification_title">FTP Server Running</string>
+    <string name="notification_text">Connected at %1$s</string>
+    
+    <!-- Permissions -->
+    <string name="permission_required">Permission Required</string>
+    <string name="storage_permission_message">Storage access is required to share files via FTP</string>
+    <string name="grant_permission">Grant Permission</string>
+    <string name="notification_permission_message">Notification permission is required to show server status</string>
+</resources>

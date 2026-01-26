@@ -1,0 +1,17 @@
+<configuration>
+    <appender name="LOGCAT" class="ch.qos.logback.classic.android.LogcatAppender">
+        <tagEncoder>
+            <pattern>%logger{12}</pattern>
+        </tagEncoder>
+        <encoder>
+            <pattern>[%-5level] %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <root level="DEBUG">
+        <appender-ref ref="LOGCAT" />
+    </root>
+
+    <logger name="org.apache.ftpserver" level="INFO" />
+    <logger name="org.apache.mina" level="WARN" />
+</configuration>
