@@ -55,6 +55,7 @@ class FtpServerService : Service() {
     private val binder = LocalBinder()
     private val logListeners = mutableListOf<LogListener>()
     private val statusListeners = mutableListOf<StatusListener>()
+    private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
     
     inner class LocalBinder : Binder() {
         fun getService(): FtpServerService = this@FtpServerService
@@ -269,7 +270,6 @@ class FtpServerService : Service() {
     }
     
     private fun log(message: String, type: LogType) {
-        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         val timestamp = timeFormat.format(Date())
         val logMessage = "[$timestamp] $message"
         

@@ -271,8 +271,10 @@ class MainActivity : AppCompatActivity(), FtpServerService.LogListener, FtpServe
             binding.txtWebDavUrl.setOnClickListener { copyToClipboard("WebDAV URL", webDavUrl) }
             
             // Generate QR code for WebDAV (better for opening files)
-            val qrBitmap = QrCodeUtils.generateQrCode(webDavUrl, 400)
-            binding.imgQrCode.setImageBitmap(qrBitmap)
+            Thread {
+                val qrBitmap = QrCodeUtils.generateQrCode(webDavUrl, 400)
+                binding.imgQrCode.post { binding.imgQrCode.setImageBitmap(qrBitmap) }
+            }.start()
         }
         
         // Update log visibility
@@ -325,18 +327,19 @@ class MainActivity : AppCompatActivity(), FtpServerService.LogListener, FtpServe
         val port = FtpServerService.currentPort
         val ftpUrl = "ftp://$ipAddress:$port"
         
-        val qrBitmap = QrCodeUtils.generateQrCode(ftpUrl, 800)
-        
-        val dialog = AlertDialog.Builder(this)
-            .setTitle(R.string.scan_qr_code)
-            .setView(android.widget.ImageView(this).apply {
-                setImageBitmap(qrBitmap)
-                setPadding(48, 48, 48, 48)
-            })
-            .setPositiveButton(android.R.string.ok, null)
-            .create()
-        
-        dialog.show()
+        Thread {
+            val qrBitmap = QrCodeUtils.generateQrCode(ftpUrl, 800)
+            runOnUiThread {
+                AlertDialog.Builder(this@MainActivity)
+                    .setTitle(R.string.scan_qr_code)
+                    .setView(android.widget.ImageView(this@MainActivity).apply {
+                        setImageBitmap(qrBitmap)
+                        setPadding(48, 48, 48, 48)
+                    })
+                    .setPositiveButton(android.R.string.ok, null)
+                    .show()
+            }
+        }.start()
     }
     
     private fun showWifiRequiredDialog() {
@@ -399,6 +402,10 @@ class LogAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LogAdapter.
     
     private val logs = mutableListOf<LogItem>()
     
+    companion object {
+        private val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
+    }
+    
     class ViewHolder(itemView: View) : androidx.recyclerview.widget.RecyclerView.ViewHolder(itemView) {
         val txtMessage: android.widget.TextView = itemView.findViewById(R.id.txtLogMessage)
         val txtTime: android.widget.TextView = itemView.findViewById(R.id.txtLogTime)
@@ -415,7 +422,6 @@ class LogAdapter : androidx.recyclerview.widget.RecyclerView.Adapter<LogAdapter.
         val log = logs[position]
         holder.txtMessage.text = log.message
         
-        val timeFormat = SimpleDateFormat("HH:mm:ss", Locale.getDefault())
         holder.txtTime.text = timeFormat.format(Date(log.timestamp))
         
         val indicatorColor = when (log.type) {

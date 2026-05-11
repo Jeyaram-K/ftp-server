@@ -2,6 +2,7 @@ package com.ftpserver.app.webdav
 
 import android.webkit.MimeTypeMap
 import fi.iki.elonen.NanoHTTPD
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
@@ -16,9 +17,11 @@ class WebDavServer(
 ) : NanoHTTPD(port) {
     
     private val rootDir = File(rootPath)
+    private val rootDirCanonical = rootDir.canonicalPath
     private val dateFormat = SimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z", Locale.US).apply {
         timeZone = TimeZone.getTimeZone("GMT")
     }
+    private val mimeTypeCache = HashMap<String, String>()
     
     var onLog: ((String) -> Unit)? = null
     
@@ -60,7 +63,7 @@ class WebDavServer(
         }
         
         val mimeType = getMimeType(file.name)
-        val fis = FileInputStream(file)
+        val fis = BufferedInputStream(FileInputStream(file), 65536)
         val response = newFixedLengthResponse(Response.Status.OK, mimeType, fis, file.length())
         response.addHeader("Content-Disposition", "inline; filename=\"${file.name}\"")
         response.addHeader("Accept-Ranges", "bytes")
@@ -80,7 +83,7 @@ class WebDavServer(
                 append("<tr><td><a href='${getParentUri(uri)}'>..</a></td><td>-</td><td>-</td></tr>")
             }
             
-            dir.listFiles()?.sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() }))?.forEach { file ->
+            (dir.listFiles() ?: emptyArray()).sortedWith(compareBy({ !it.isDirectory }, { it.name.lowercase() })).forEach { file ->
                 val name = if (file.isDirectory) "${file.name}/" else file.name
                 val size = if (file.isDirectory) "-" else formatSize(file.length())
                 val modified = dateFormat.format(Date(file.lastModified()))
@@ -100,8 +103,10 @@ class WebDavServer(
         
         val contentLength = session.headers["content-length"]?.toLongOrNull() ?: 0
         
-        FileOutputStream(file).use { fos ->
-            session.inputStream.copyTo(fos)
+        session.inputStream.use { input ->
+            FileOutputStream(file).use { output ->
+                input.copyTo(output, bufferSize = 65536)
+            }
         }
         
         return if (file.exists()) {
@@ -150,7 +155,7 @@ class WebDavServer(
             appendFileResponse(this, file, uri)
             
             if (file.isDirectory && depth != "0") {
-                file.listFiles()?.forEach { child ->
+                (file.listFiles() ?: emptyArray()).forEach { child ->
                     val childUri = if (uri.endsWith("/")) "$uri${child.name}" else "$uri/${child.name}"
                     appendFileResponse(this, child, childUri)
                 }
@@ -292,7 +297,16 @@ class WebDavServer(
     
     private fun getFile(uri: String): File {
         val path = uri.trimStart('/').replace("%20", " ")
-        return if (path.isEmpty()) rootDir else File(rootDir, path)
+        val file = if (path.isEmpty()) rootDir else File(rootDir, path)
+        return if (isWithinRoot(file)) file else rootDir
+    }
+    
+    private fun isWithinRoot(file: File): Boolean {
+        return try {
+            file.canonicalPath.startsWith(rootDirCanonical)
+        } catch (e: Exception) {
+            false
+        }
     }
     
     private fun getParentUri(uri: String): String {
@@ -302,9 +316,10 @@ class WebDavServer(
     }
     
     private fun getMimeType(filename: String): String {
-        val extension = filename.substringAfterLast('.', "").lowercase()
-        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)
-            ?: "application/octet-stream"
+        val ext = filename.substringAfterLast('.', "").lowercase()
+        return mimeTypeCache.getOrPut(ext) {
+            MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+        }
     }
     
     private fun formatSize(bytes: Long): String {

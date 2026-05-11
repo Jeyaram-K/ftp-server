@@ -2,11 +2,14 @@ package com.ftpserver.app.ftp
 
 import org.apache.ftpserver.ftplet.FtpFile
 import org.apache.ftpserver.ftplet.User
+import java.io.BufferedInputStream
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.io.OutputStream
+import java.io.RandomAccessFile
+import java.nio.channels.Channels
 
 class AndroidFtpFile(
     private val file: File,
@@ -101,7 +104,9 @@ class AndroidFtpFile(
             if (offset == 0L) {
                 FileOutputStream(file)
             } else {
-                FileOutputStream(file, true).also { it.channel.position(offset) }
+                val raf = RandomAccessFile(file, "rw")
+                raf.seek(offset)
+                Channels.newOutputStream(raf.channel)
             }
         } catch (e: Exception) {
             e.printStackTrace()
@@ -113,7 +118,7 @@ class AndroidFtpFile(
         return try {
             if (!file.exists() || !file.isFile) return null
             
-            FileInputStream(file).also {
+            BufferedInputStream(FileInputStream(file), 65536).also {
                 if (offset > 0) {
                     it.skip(offset)
                 }
