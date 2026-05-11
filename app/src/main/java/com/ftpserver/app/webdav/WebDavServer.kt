@@ -23,6 +23,49 @@ class WebDavServer(
     }
     private val mimeTypeCache = HashMap<String, String>()
     
+    companion object {
+        private val CUSTOM_MIME_TYPES = mapOf(
+            // Video
+            "mkv" to "video/x-matroska",
+            "avi" to "video/x-msvideo",
+            "mov" to "video/quicktime",
+            "webm" to "video/webm",
+            "flv" to "video/x-flv",
+            "m4v" to "video/x-m4v",
+            "3gp" to "video/3gpp",
+            "ts" to "video/mp2t",
+            // Audio
+            "flac" to "audio/flac",
+            "ogg" to "audio/ogg",
+            "opus" to "audio/opus",
+            "wma" to "audio/x-ms-wma",
+            "aac" to "audio/aac",
+            "m4a" to "audio/mp4",
+            // Documents
+            "pdf" to "application/pdf",
+            "doc" to "application/msword",
+            "docx" to "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "xls" to "application/vnd.ms-excel",
+            "xlsx" to "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "ppt" to "application/vnd.ms-powerpoint",
+            "pptx" to "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "odt" to "application/vnd.oasis.opendocument.text",
+            "ods" to "application/vnd.oasis.opendocument.spreadsheet",
+            "odp" to "application/vnd.oasis.opendocument.presentation",
+            "epub" to "application/epub+zip",
+            // Archives
+            "7z" to "application/x-7z-compressed",
+            "rar" to "application/vnd.rar",
+            "tar" to "application/x-tar",
+            "gz" to "application/gzip",
+            "bz2" to "application/x-bzip2",
+            "xz" to "application/x-xz",
+            // Other
+            "apk" to "application/vnd.android.package-archive",
+            "iso" to "application/x-iso9660-image"
+        )
+    }
+    
     var onLog: ((String) -> Unit)? = null
     
     override fun serve(session: IHTTPSession): Response {
@@ -33,7 +76,7 @@ class WebDavServer(
         
         return try {
             when (method) {
-                Method.GET -> handleGet(uri)
+                Method.GET -> handleGet(uri, session)
                 Method.PUT -> handlePut(session, uri)
                 Method.DELETE -> handleDelete(uri)
                 Method.PROPFIND -> handlePropfind(uri, session)
@@ -51,21 +94,23 @@ class WebDavServer(
         }
     }
     
-    private fun handleGet(uri: String): Response {
+    private fun handleGet(uri: String, session: IHTTPSession? = null): Response {
         val file = getFile(uri)
-        
+
         if (!file.exists()) {
             return newFixedLengthResponse(Response.Status.NOT_FOUND, MIME_PLAINTEXT, "Not found")
         }
-        
+
         if (file.isDirectory) {
             return handleDirectoryListing(file, uri)
         }
-        
+
+        val forceDownload = session?.parameters?.containsKey("download") == true
         val mimeType = getMimeType(file.name)
         val fis = BufferedInputStream(FileInputStream(file), 65536)
         val response = newFixedLengthResponse(Response.Status.OK, mimeType, fis, file.length())
-        response.addHeader("Content-Disposition", "inline; filename=\"${file.name}\"")
+        val disposition = if (forceDownload || !isViewableMimeType(mimeType)) "attachment" else "inline"
+        response.addHeader("Content-Disposition", "$disposition; filename=\"${file.name}\"")
         response.addHeader("Accept-Ranges", "bytes")
         return response
     }
@@ -318,7 +363,20 @@ class WebDavServer(
     private fun getMimeType(filename: String): String {
         val ext = filename.substringAfterLast('.', "").lowercase()
         return mimeTypeCache.getOrPut(ext) {
-            MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext) ?: "application/octet-stream"
+            CUSTOM_MIME_TYPES[ext]
+                ?: MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+                ?: "application/octet-stream"
+        }
+    }
+
+    private fun isViewableMimeType(mimeType: String): Boolean {
+        return when {
+            mimeType.startsWith("image/") -> true
+            mimeType.startsWith("text/") -> true
+            mimeType.startsWith("video/") -> true
+            mimeType.startsWith("audio/") -> true
+            mimeType == "application/pdf" -> true
+            else -> false
         }
     }
     
